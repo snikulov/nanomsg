@@ -261,7 +261,6 @@ add_library (nanomsg SHARED ${NN_SOURCES})
 set_target_properties (nanomsg PROPERTIES VERSION "${NN_VERSION_STR}")
 
 add_definitions (-DNN_EXPORTS)
-add_definitions (-DNN_USE_LITERAL_IFADDR)
 
 if (UNIX AND NOT NN_HAVE_OSX)
     target_link_libraries (nanomsg rt)

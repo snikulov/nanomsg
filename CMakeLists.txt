@@ -228,7 +228,6 @@ set (NN_DESCRIPTION "nanomsg library is a high-performance implementation of sev
 
 add_subdirectory (src)
 
-<<<<<<< HEAD
 #  Build the tools
 
 add_executable (nanocat tools/nanocat.c tools/options.c)

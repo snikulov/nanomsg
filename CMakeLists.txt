@@ -308,7 +308,7 @@ if(WITH_NANOMSG_UT)
     add_libnanomsg_perf (remote_lat)
     add_libnanomsg_perf (local_thr)
     add_libnanomsg_perf (remote_thr)
-endif(WITH_UT)
+endif()
 
 #  NSIS package
 #  Installation.

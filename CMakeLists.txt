@@ -240,73 +240,75 @@ if (UNIX)
 endif ()
 
 #  Build unit tests.
+if(WITH_NANOMSG_UT)
 
-set (all_tests "")
+    set (all_tests "")
 
-macro (add_libnanomsg_test NAME)
-    list (APPEND all_tests ${NAME})
-    add_executable (${NAME} tests/${NAME}.c)
-    target_link_libraries (${NAME} nanomsg)
-    add_test (${NAME} ${NAME})
-endmacro (add_libnanomsg_test)
+    macro (add_libnanomsg_test NAME)
+        list (APPEND all_tests ${NAME})
+        add_executable (${NAME} tests/${NAME}.c)
+        target_link_libraries (${NAME} nanomsg)
+        add_test (${NAME} ${NAME})
+    endmacro (add_libnanomsg_test)
 
 #  Transport tests.
-add_libnanomsg_test (inproc)
-add_libnanomsg_test (inproc_shutdown)
-add_libnanomsg_test (ipc)
-add_libnanomsg_test (ipc_shutdown)
-add_libnanomsg_test (tcp)
-add_libnanomsg_test (tcp_shutdown)
+    add_libnanomsg_test (inproc)
+    add_libnanomsg_test (inproc_shutdown)
+    add_libnanomsg_test (ipc)
+    add_libnanomsg_test (ipc_shutdown)
+    add_libnanomsg_test (tcp)
+    add_libnanomsg_test (tcp_shutdown)
 
 #  Protocol tests.
-add_libnanomsg_test (pair)
-add_libnanomsg_test (pubsub)
-add_libnanomsg_test (reqrep)
-add_libnanomsg_test (pipeline)
-add_libnanomsg_test (survey)
-add_libnanomsg_test (bus)
+    add_libnanomsg_test (pair)
+    add_libnanomsg_test (pubsub)
+    add_libnanomsg_test (reqrep)
+    add_libnanomsg_test (pipeline)
+    add_libnanomsg_test (survey)
+    add_libnanomsg_test (bus)
 
 #  Feature tests.
-add_libnanomsg_test (block)
-add_libnanomsg_test (term)
-add_libnanomsg_test (timeo)
-add_libnanomsg_test (iovec)
-add_libnanomsg_test (msg)
-add_libnanomsg_test (prio)
-add_libnanomsg_test (poll)
-add_libnanomsg_test (device)
-add_libnanomsg_test (emfile)
-add_libnanomsg_test (domain)
-add_libnanomsg_test (trie)
-add_libnanomsg_test (list)
-add_libnanomsg_test (hash)
-add_libnanomsg_test (symbol)
-add_libnanomsg_test (separation)
-add_libnanomsg_test (zerocopy)
-add_libnanomsg_test (shutdown)
+    add_libnanomsg_test (block)
+    add_libnanomsg_test (term)
+    add_libnanomsg_test (timeo)
+    add_libnanomsg_test (iovec)
+    add_libnanomsg_test (msg)
+    add_libnanomsg_test (prio)
+    add_libnanomsg_test (poll)
+    add_libnanomsg_test (device)
+    add_libnanomsg_test (emfile)
+    add_libnanomsg_test (domain)
+    add_libnanomsg_test (trie)
+    add_libnanomsg_test (list)
+    add_libnanomsg_test (hash)
+    add_libnanomsg_test (symbol)
+    add_libnanomsg_test (separation)
+    add_libnanomsg_test (zerocopy)
+    add_libnanomsg_test (shutdown)
 
 #  The builtin "test" target cannot be modified to build the library and tests
 #  or to show output when a test failes. Let's create a different target.
-add_custom_target (check
+    add_custom_target (check
                    COMMENT "Running tests..."
                    COMMAND ctest --force-new-ctest-process --output-on-failure
                    WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
-add_dependencies (check ${all_tests})
+    add_dependencies (check ${all_tests})
 
 #  Build the performance tests.
 
-macro (add_libnanomsg_perf NAME)
-    add_executable (${NAME} perf/${NAME}.c)
-    target_link_libraries (${NAME} nanomsg)
-endmacro (add_libnanomsg_perf)
+    macro (add_libnanomsg_perf NAME)
+        add_executable (${NAME} perf/${NAME}.c)
+        target_link_libraries (${NAME} nanomsg)
+    endmacro (add_libnanomsg_perf)
 
-add_libnanomsg_perf (inproc_lat)
-add_libnanomsg_perf (inproc_thr)
-add_libnanomsg_perf (local_lat)
-add_libnanomsg_perf (remote_lat)
-add_libnanomsg_perf (local_thr)
-add_libnanomsg_perf (remote_thr)
+    add_libnanomsg_perf (inproc_lat)
+    add_libnanomsg_perf (inproc_thr)
+    add_libnanomsg_perf (local_lat)
+    add_libnanomsg_perf (remote_lat)
+    add_libnanomsg_perf (local_thr)
+    add_libnanomsg_perf (remote_thr)
+endif(WITH_UT)
 
 #  NSIS package
 #  Installation.

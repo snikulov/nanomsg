@@ -166,6 +166,9 @@ extern "C" {
 #define EISCONN (NN_HAUSNUMERO + 27)
 #define NN_EISCONN_DEFINED
 #endif
+#ifndef ESOCKTNOSUPPORT
+#define ESOCKTNOSUPPORT (NN_HAUSNUMERO + 28)
+#endif
 
 /*  Native nanomsg error codes.                                               */
 #ifndef ETERM
@@ -255,6 +258,7 @@ NN_EXPORT void nn_term (void);
 #define NN_MSG ((size_t) -1)
 
 NN_EXPORT void *nn_allocmsg (size_t size, int type);
+NN_EXPORT void *nn_reallocmsg (void *msg, size_t size);
 NN_EXPORT int nn_freemsg (void *msg);
 
 /******************************************************************************/

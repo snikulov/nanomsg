@@ -249,6 +249,12 @@ set (NN_SOURCES
     transports/tcp/tcp.c
 )
 
+if (WIN32)
+    LIST (APPEND NN_SOURCES
+        utils/win.h
+    )
+endif()
+
 #  Here we cause symbols not to be exported from the library unless
 #  they are explicitly marked by NN_EXPORT specifier.
 #  Note: For MSVC there's no need for defining a special option. With MSVC

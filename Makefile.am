@@ -302,7 +302,8 @@ libnanomsg_la_SOURCES = \
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libnanomsg.pc
 
-libnanomsg_la_LDFLAGS = -version-info @NN_LIBTOOL_VERSION@
+libnanomsg_la_LDFLAGS = -no-undefined -version-info @NN_LIBTOOL_VERSION@
+libnanomsg_la_CFLAGS = -DNN_EXPORTS
 
 ################################################################################
 #  documentation                                                               #
@@ -330,6 +331,7 @@ MAN3 = \
     doc/nn_symbol_info.txt \
     doc/nn_term.txt \
     doc/nn_allocmsg.txt \
+    doc/nn_reallocmsg.txt \
     doc/nn_freemsg.txt \
     doc/nn_socket.txt \
     doc/nn_close.txt \

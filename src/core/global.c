@@ -77,6 +77,14 @@
 #include <stdlib.h>
 #include <time.h>
 
+#if defined NN_HAVE_MINGW
+#include <pthread.h>
+#elif defined NN_HAVE_WINDOWS
+#define gmtime_r(ptr_numtime, ptr_strtime) gmtime_s(ptr_strtime, ptr_numtime)
+#endif
+#define NN_HAVE_GMTIME_R
+
+
 #if defined NN_HAVE_WINDOWS
 #include "../utils/win.h"
 #else
@@ -245,9 +253,7 @@ static void nn_global_init (void)
 
     /*  Plug in individual transports. */
     nn_global_add_transport (nn_inproc);
-#if !defined NN_HAVE_WINDOWS
     nn_global_add_transport (nn_ipc);
-#endif
     nn_global_add_transport (nn_tcp);
 
     /*  Plug in individual socktypes. */
@@ -304,7 +310,7 @@ static void nn_global_init (void)
         /*  No cross-platform way to find out application binary.
             Also, MSVC suggests using _getpid() instead of getpid(),
             however, it's not clear whether the former is supported
-            by older versions of Winddows/MSVC. */
+            by older versions of Windows/MSVC. */
 #if defined _MSC_VER
 #pragma warning (push)
 #pragma warning (disable:4996)
@@ -347,6 +353,9 @@ static void nn_global_term (void)
 
     /*  Shut down the worker threads. */
     nn_pool_term (&self.pool);
+
+    /* Terminate ctx mutex */
+    nn_ctx_term (&self.ctx);
 
     /*  Ask all the transport to deallocate their global resources. */
     while (!nn_list_empty (&self.transports)) {
@@ -407,6 +416,17 @@ void *nn_allocmsg (size_t size, int type)
     rc = nn_chunk_alloc (size, type, &result);
     if (rc == 0)
         return result;
+    errno = -rc;
+    return NULL;
+}
+
+void *nn_reallocmsg (void *msg, size_t size)
+{
+    int rc;
+
+    rc = nn_chunk_realloc (size, &msg);
+    if (rc == 0)
+        return msg;
     errno = -rc;
     return NULL;
 }
@@ -865,10 +885,10 @@ static void nn_global_submit_counter (int i, struct nn_sock *s,
     if (self.statistics_socket >= 0) {
         /*  TODO(tailhook) add HAVE_GMTIME_R ifdef  */
         time(&numtime);
-#ifdef NN_HAVE_WINDOWS
-        gmtime_s (&strtime, &numtime);
-#else
+#ifdef NN_HAVE_GMTIME_R
         gmtime_r (&numtime, &strtime);
+#else
+#error
 #endif
         strftime (timebuf, 20, "%Y-%m-%dT%H:%M:%S", &strtime);
         if(*s->socket_name) {
@@ -906,10 +926,10 @@ static void nn_global_submit_level (int i, struct nn_sock *s,
     if (self.statistics_socket >= 0) {
         /*  TODO(tailhook) add HAVE_GMTIME_R ifdef  */
         time(&numtime);
-#ifdef NN_HAVE_WINDOWS
-        gmtime_s (&strtime, &numtime);
-#else
+#ifdef NN_HAVE_GMTIME_R
         gmtime_r (&numtime, &strtime);
+#else
+#error
 #endif
         strftime (timebuf, 20, "%Y-%m-%dT%H:%M:%S", &strtime);
         if(*s->socket_name) {
@@ -943,10 +963,10 @@ static void nn_global_submit_errors (int i, struct nn_sock *s,
     if (self.statistics_socket >= 0) {
         /*  TODO(tailhook) add HAVE_GMTIME_R ifdef  */
         time(&numtime);
-#ifdef NN_HAVE_WINDOWS
-        gmtime_s (&strtime, &numtime);
-#else
+#ifdef NN_HAVE_GMTIME_R
         gmtime_r (&numtime, &strtime);
+#else
+#error
 #endif
         strftime (timebuf, 20, "%Y-%m-%dT%H:%M:%S", &strtime);
         if(*s->socket_name) {

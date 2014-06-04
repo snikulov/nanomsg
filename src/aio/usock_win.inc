@@ -125,7 +125,7 @@ int nn_usock_start (struct nn_usock *self, int domain, int type, int protocol)
 
     /*  Disable inheriting the socket to the child processes. */
 #if defined HANDLE_FLAG_INHERIT
-    brc = SetHandleInformation ((HANDLE) self->s, HANDLE_FLAG_INHERIT, 0);
+    brc = SetHandleInformation (self->p, HANDLE_FLAG_INHERIT, 0);
     win_assert (brc);
 #endif
 
@@ -141,7 +141,7 @@ int nn_usock_start (struct nn_usock *self, int domain, int type, int protocol)
 
     /*  Associate the socket with a worker thread/completion port. */
     worker = nn_fsm_choose_worker (&self->fsm);
-    cp = CreateIoCompletionPort ((HANDLE) self->s,
+    cp = CreateIoCompletionPort ( self->p,
         nn_worker_getcp (worker), (ULONG_PTR) NULL, 0);
     nn_assert (cp);
 
@@ -175,7 +175,8 @@ int nn_usock_setsockopt (struct nn_usock *self, int level, int optname,
     nn_assert (self->state == NN_USOCK_STATE_STARTING ||
         self->state == NN_USOCK_STATE_ACCEPTED);
 
-    rc = setsockopt (self->s, level, optname, (char*) optval, optlen);
+    nn_assert (optlen < INT_MAX);
+    rc = setsockopt (self->s, level, optname, (char*) optval, (int) optlen);
     if (nn_slow (rc == SOCKET_ERROR))
         return -nn_err_wsa_to_posix (WSAGetLastError ());
 
@@ -198,7 +199,8 @@ int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
         (const char*) &opt, sizeof (opt));
     wsa_assert (rc != SOCKET_ERROR);
 
-    rc = bind (self->s, addr, addrlen);
+    nn_assert (addrlen < INT_MAX);
+    rc = bind (self->s, addr, (int) addrlen);
     if (nn_slow (rc == SOCKET_ERROR))
        return -nn_err_wsa_to_posix (WSAGetLastError ());
 
@@ -295,8 +297,9 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     nn_assert (nbytes == sizeof (pconnectex));
 
     /*  Connect itself. */
+	nn_assert(addrlen < INT_MAX);
     memset (&self->out.olpd, 0, sizeof (self->out.olpd));
-    brc = pconnectex (self->s, (struct sockaddr*) addr, addrlen,
+    brc = pconnectex (self->s, (struct sockaddr*) addr, (int) addrlen,
         NULL, 0, NULL, &self->out.olpd);
 
     /*  Immediate success. */
@@ -391,10 +394,23 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     wsa_assert (0);
 }
 
+static void nn_usock_close(struct nn_usock *self) {
+    if (self->domain == AF_UNIX) {
+        BOOL brc = CloseHandle(self->p);
+        self->p = INVALID_HANDLE_VALUE;
+        win_assert(brc);
+    }
+    else
+    {
+        int rc = closesocket(self->s);
+        self->s = INVALID_SOCKET;
+        wsa_assert(rc == 0);
+    }
+}
+
 static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
-    int rc;
     struct nn_usock *usock;
 
     usock = nn_cont (self, struct nn_usock, fsm);
@@ -450,8 +466,7 @@ static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
               !nn_worker_op_isidle (&usock->out))
             return;
 finish1:
-        rc = closesocket (usock->s);
-        wsa_assert (rc == 0);
+        nn_usock_close(usock);
 finish2:
         usock->state = NN_USOCK_STATE_IDLE;
         nn_fsm_stopped (&usock->fsm, NN_USOCK_STOPPED);
@@ -465,7 +480,6 @@ finish3:
 static void nn_usock_handler (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
-    int rc;
     struct nn_usock *usock;
 
     usock = nn_cont (self, struct nn_usock, fsm);
@@ -561,9 +575,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                     NN_USOCK_CONNECTED);
                 return;
             case NN_USOCK_ACTION_ERROR:
-                rc = closesocket (usock->s);
-                wsa_assert (rc == 0);
-                usock->s = INVALID_SOCKET;
+                nn_usock_close(usock);
                 usock->state = NN_USOCK_STATE_DONE;
                 nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
                 return;
@@ -578,9 +590,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                     NN_USOCK_CONNECTED);
                 return;
             case NN_WORKER_OP_ERROR:
-                rc = closesocket (usock->s);
-                wsa_assert (rc == 0);
-                usock->s = INVALID_SOCKET;
+                nn_usock_close(usock);
                 usock->state = NN_USOCK_STATE_DONE;
                 nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
                 return;
@@ -604,7 +614,9 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                 return;
             case NN_WORKER_OP_ERROR:
                 if (nn_usock_cancel_io (usock) == 0) {
-                    nn_fsm_raise(&usock->fsm, &usock->event_error, NN_USOCK_SHUTDOWN);
+                    nn_fsm_raise(&usock->fsm, &usock->event_error,
+                        NN_USOCK_SHUTDOWN);
+                    nn_usock_close (usock);
                     usock->state = NN_USOCK_STATE_DONE;
                     return;
                 }
@@ -620,7 +632,9 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                 return;
             case NN_WORKER_OP_ERROR:
                 if (nn_usock_cancel_io (usock) == 0) {
-                    nn_fsm_raise(&usock->fsm, &usock->event_error, NN_USOCK_SHUTDOWN);
+                    nn_fsm_raise(&usock->fsm, &usock->event_error,
+                        NN_USOCK_SHUTDOWN);
+                    nn_usock_close(usock);
                     usock->state = NN_USOCK_STATE_DONE;
                     return;
                 }
@@ -633,7 +647,9 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_USOCK_ACTION_ERROR:
                 if (nn_usock_cancel_io (usock) == 0) {
-                    nn_fsm_raise(&usock->fsm, &usock->event_error, NN_USOCK_SHUTDOWN);
+                    nn_fsm_raise(&usock->fsm, &usock->event_error,
+                        NN_USOCK_SHUTDOWN);
+                    nn_usock_close(usock);
                     usock->state = NN_USOCK_STATE_DONE;
                     return;
                 }
@@ -656,6 +672,8 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
             if (!nn_worker_op_isidle (&usock->in) ||
                   !nn_worker_op_isidle (&usock->out))
                 return;
+            nn_fsm_raise(&usock->fsm, &usock->event_error, NN_USOCK_SHUTDOWN);
+            nn_usock_close(usock);
             usock->state = NN_USOCK_STATE_DONE;
             return;
         default:
@@ -778,13 +796,13 @@ static int nn_usock_cancel_io (struct nn_usock *self)
         We have to use CancelIoEx instead. */
     rc = 0;
     if (!nn_worker_op_isidle (&self->in)) {
-        brc = CancelIoEx ((HANDLE) self->s, &self->in.olpd);
+        brc = CancelIoEx (self->p, &self->in.olpd);
         win_assert (brc || GetLastError () == ERROR_NOT_FOUND);
         rc = 1;
     }
     if (!nn_worker_op_isidle (&self->out)) {
-        brc = CancelIoEx ((HANDLE) self->s, &self->out.olpd);
-        win_assert (brc || ERROR_NOT_FOUND);
+        brc = CancelIoEx (self->p, &self->out.olpd);
+        win_assert (brc || GetLastError () == ERROR_NOT_FOUND);
         rc = 1;
     }
 

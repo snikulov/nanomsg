@@ -40,7 +40,6 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     set (NN_HAVE_WINDOWS 1)
     add_definitions (-DNN_HAVE_WINDOWS)
     add_definitions (-D_CRT_SECURE_NO_WARNINGS)
-
     if (MINGW)
         add_definitions (-DNN_HAVE_MINGW -DNN_HAVE_STDINT -D_WIN32_WINNT=0x0600)
     endif ()
@@ -207,6 +206,13 @@ elseif (NN_HAVE_SIOCGIFADDR)
 else ()
     message ("-- No NIC name resolution mechanism used")
     add_definitions (-DNN_USE_LITERAL_IFADDR)
+endif ()
+
+#  Optional debugging/profiling tools to switch on.
+
+option (ALLOC_MONITOR "Add memory allocation monitoring" OFF)
+if (ALLOC_MONITOR)
+    add_definitions(-DNN_ALLOC_MONITOR)
 endif ()
 
 #  Optional debugging/profiling tools to switch on.

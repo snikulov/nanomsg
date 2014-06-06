@@ -27,7 +27,9 @@ include (CheckSymbolExists)
 include (CheckCSourceCompiles)
 
 project (nanomsg C)
-enable_testing ()
+
+option(WITH_UT "Enable/Disable Unit Tests" TRUE)
+
 
 #  Platform checks.
 
@@ -160,15 +162,15 @@ if (NN_HAVE_SEMAPHORE)
 endif()
 
 check_c_source_compiles ("
-    #include <stdint.h>
-    int main()
-    {
-        volatile uint32_t n = 0;
-        __sync_fetch_and_add (&n, 1);
-        __sync_fetch_and_sub (&n, 1);
-        return 0;
-    }
-    " NN_HAVE_GCC_ATOMIC_BUILTINS)
+#include <stdint.h>
+int main()
+{
+    volatile uint32_t n = 0;
+    __sync_fetch_and_add (&n, 1);
+    __sync_fetch_and_sub (&n, 1);
+    return 0;
+}
+" NN_HAVE_GCC_ATOMIC_BUILTINS)
 if (NN_HAVE_GCC_ATOMIC_BUILTINS)
     add_definitions (-DNN_HAVE_GCC_ATOMIC_BUILTINS)
 endif ()
@@ -250,8 +252,9 @@ if (UNIX)
 endif ()
 
 #  Build unit tests.
-if(WITH_NANOMSG_UT)
+if(WITH_UT)
 
+    enable_testing ()
     set (all_tests "")
 
     macro (add_libnanomsg_test NAME)
@@ -261,7 +264,7 @@ if(WITH_NANOMSG_UT)
         add_test (NAME ${NAME} COMMAND ${NAME})
     endmacro (add_libnanomsg_test)
 
-#  Transport tests.
+    #  Transport tests.
     add_libnanomsg_test (inproc)
     add_libnanomsg_test (inproc_shutdown)
     add_libnanomsg_test (ipc)
@@ -269,7 +272,7 @@ if(WITH_NANOMSG_UT)
     add_libnanomsg_test (tcp)
     add_libnanomsg_test (tcp_shutdown)
 
-#  Protocol tests.
+    #  Protocol tests.
     add_libnanomsg_test (pair)
     add_libnanomsg_test (pubsub)
     add_libnanomsg_test (reqrep)
@@ -277,7 +280,7 @@ if(WITH_NANOMSG_UT)
     add_libnanomsg_test (survey)
     add_libnanomsg_test (bus)
 
-#  Feature tests.
+    #  Feature tests.
     add_libnanomsg_test (block)
     add_libnanomsg_test (term)
     add_libnanomsg_test (timeo)
@@ -296,16 +299,16 @@ if(WITH_NANOMSG_UT)
     add_libnanomsg_test (zerocopy)
     add_libnanomsg_test (shutdown)
 
-#  The builtin "test" target cannot be modified to build the library and tests
-#  or to show output when a test failes. Let's create a different target.
+    #  The builtin "test" target cannot be modified to build the library and tests
+    #  or to show output when a test failes. Let's create a different target.
     add_custom_target (check
-                   COMMENT "Running tests..."
-                   COMMAND ctest --force-new-ctest-process --output-on-failure
-                   WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+        COMMENT "Running tests..."
+        COMMAND ctest --force-new-ctest-process --output-on-failure
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
     add_dependencies (check ${all_tests})
 
-#  Build the performance tests.
+    #  Build the performance tests.
 
     macro (add_libnanomsg_perf NAME)
         add_executable (${NAME} perf/${NAME}.c)
@@ -318,7 +321,8 @@ if(WITH_NANOMSG_UT)
     add_libnanomsg_perf (remote_lat)
     add_libnanomsg_perf (local_thr)
     add_libnanomsg_perf (remote_thr)
-endif()
+
+endif(WITH_UT)
 
 #  NSIS package
 #  Installation.

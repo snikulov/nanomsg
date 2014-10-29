@@ -47,7 +47,6 @@ set (NN_SOURCES
     core/sock.h
     core/sock.c
     core/sockbase.c
-    core/device.c
     core/symbol.c
 
     aio/ctx.h
@@ -137,6 +136,9 @@ set (NN_SOURCES
     utils/wire.h
     utils/wire.c
 
+    devices/device.h
+    devices/device.c
+
     protocols/utils/dist.h
     protocols/utils/dist.c
     protocols/utils/excl.h
@@ -182,6 +184,8 @@ set (NN_SOURCES
     protocols/reqrep/req.c
     protocols/reqrep/rep.h
     protocols/reqrep/rep.c
+    protocols/reqrep/task.h
+    protocols/reqrep/task.c
     protocols/reqrep/xrep.h
     protocols/reqrep/xrep.c
     protocols/reqrep/xreq.h

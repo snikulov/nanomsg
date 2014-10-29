@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2014 250bpm s.r.o.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,33 +20,41 @@
     IN THE SOFTWARE.
 */
 
-#ifndef REQREP_H_INCLUDED
-#define REQREP_H_INCLUDED
+#ifndef NN_TASK_INCLUDED
+#define NN_TASK_INCLUDED
 
-#include "nn.h"
+#include "../../reqrep.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "../../aio/fsm.h"
+#include "../../aio/timer.h"
+#include "../../utils/msg.h"
+#include "../../utils/int.h"
 
-#define NN_PROTO_REQREP 3
+struct nn_task {
 
-#define NN_REQ (NN_PROTO_REQREP * 16 + 0)
-#define NN_REP (NN_PROTO_REQREP * 16 + 1)
+    /*  ID of the request being currently processed. Replies for different
+        requests are considered stale and simply dropped. */
+    uint32_t id;
 
-#define NN_REQ_RESEND_IVL 1
+    /*  User-defined handle of the task. */
+    nn_req_handle hndl;
 
-typedef union nn_req_handle {
-    int i;
-    void *ptr;
-} nn_req_handle;
+    /*  Stored request, so that it can be re-sent if needed. */
+    struct nn_msg request;
 
-NN_EXPORT int nn_req_send (int s, nn_req_handle hndl, const void *buf, size_t len, int flags);
-NN_EXPORT int nn_req_recv (int s, nn_req_handle *hndl, void *buf, size_t len, int flags);
+    /*  Stored reply, so that user can retrieve it later on. */
+    struct nn_msg reply;
 
-#ifdef __cplusplus
-}
-#endif
+    /*  Timer used to wait while request should be re-sent. */
+    struct nn_timer timer;
+
+    /*  Pipe the current request has been sent to. This is an optimisation so
+        that request can be re-sent immediately if the pipe disappears.  */
+    struct nn_pipe *sent_to;
+};
+
+void nn_task_init (struct nn_task *self, uint32_t id, nn_req_handle hndl);
+void nn_task_term (struct nn_task *self);
 
 #endif
 

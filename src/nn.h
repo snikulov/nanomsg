@@ -32,30 +32,26 @@ extern "C" {
 #include <stddef.h>
 
 /*  Handle DSO symbol visibility                                             */
-#if defined _WIN32
-#   if defined NN_EXPORTS
-#       define NN_EXPORT __declspec(dllexport)
-#   else
-#       define NN_EXPORT __declspec(dllimport)
-#   endif
+#if defined NN_NO_EXPORTS
+#   define NN_EXPORT
 #else
-#   if defined __SUNPRO_C
-#       define NN_EXPORT __global
-#   elif (defined __GNUC__ && __GNUC__ >= 4) || \
-          defined __INTEL_COMPILER || defined __clang__
-#       define NN_EXPORT __attribute__ ((visibility("default")))
+#   if defined _WIN32
+#      if defined NN_EXPORTS
+#          define NN_EXPORT __declspec(dllexport)
+#      else
+#          define NN_EXPORT __declspec(dllimport)
+#      endif
 #   else
-#       define NN_EXPORT
+#      if defined __SUNPRO_C
+#          define NN_EXPORT __global
+#      elif (defined __GNUC__ && __GNUC__ >= 4) || \
+             defined __INTEL_COMPILER || defined __clang__
+#          define NN_EXPORT __attribute__ ((visibility("default")))
+#      else
+#          define NN_EXPORT
+#      endif
 #   endif
 #endif
-
-/*  Inline functions are everywhere, but MSVC requires underscores           */
-#if defined _WIN32
-#  define NN_INLINE static __inline
-#else
-#  define NN_INLINE static inline
-#endif
-
 
 /******************************************************************************/
 /*  ABI versioning support.                                                   */
@@ -67,13 +63,13 @@ extern "C" {
 /*  www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html  */
 
 /*  The current interface version. */
-#define NN_VERSION_CURRENT 1
+#define NN_VERSION_CURRENT 2
 
 /*  The latest revision of the current interface. */
 #define NN_VERSION_REVISION 0
 
 /*  How many past interface versions are still supported. */
-#define NN_VERSION_AGE 1
+#define NN_VERSION_AGE 2
 
 /******************************************************************************/
 /*  Errors.                                                                   */
@@ -132,8 +128,11 @@ extern "C" {
 #ifndef EFAULT
 #define EFAULT (NN_HAUSNUMERO + 16)
 #endif
+#ifndef EACCES
+#define EACCES (NN_HAUSNUMERO + 17)
+#endif
 #ifndef EACCESS
-#define EACCESS (NN_HAUSNUMERO + 17)
+#define EACCESS (EACCES)
 #endif
 #ifndef ENETRESET
 #define ENETRESET (NN_HAUSNUMERO + 18)
@@ -226,7 +225,7 @@ struct nn_symbol_properties {
     /*  The constant value  */
     int value;
 
-    /*  The contant name  */
+    /*  The constant name  */
     const char* name;
 
     /*  The constant namespace, or zero for namespaces themselves */
@@ -284,18 +283,9 @@ struct nn_cmsghdr {
 };
 
 /*  Internal function. Not to be used directly.                               */
-/*  Use NN_CMSG_NEXTHDR macro instead.                                        */
-NN_INLINE struct nn_cmsghdr *nn_cmsg_nexthdr_ (const struct nn_msghdr *mhdr,
-    const struct nn_cmsghdr *cmsg)
-{
-    size_t sz;
-
-    sz = sizeof (struct nn_cmsghdr) + cmsg->cmsg_len;
-    if (((char*) cmsg) - ((char*) mhdr->msg_control) + sz >=
-           mhdr->msg_controllen)
-        return NULL;
-    return (struct nn_cmsghdr*) (((char*) cmsg) + sz);
-}
+/*  Use NN_CMSG_NXTHDR macro instead.                                         */
+struct nn_cmsghdr *nn_cmsg_nexthdr_ (const struct nn_msghdr *mhdr,
+    const struct nn_cmsghdr *cmsg);
 
 #define NN_CMSG_FIRSTHDR(mhdr) \
     ((mhdr)->msg_controllen >= sizeof (struct nn_cmsghdr) \
@@ -384,8 +374,6 @@ NN_EXPORT int nn_poll (struct nn_pollfd *fds, int nfds, int timeout);
 /******************************************************************************/
 
 NN_EXPORT int nn_device (int s1, int s2);
-
-#undef NN_EXPORT
 
 #ifdef __cplusplus
 }

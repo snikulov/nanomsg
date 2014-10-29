@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2014 250bpm s.r.o.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,33 +20,15 @@
     IN THE SOFTWARE.
 */
 
-#ifndef REQREP_H_INCLUDED
-#define REQREP_H_INCLUDED
+#include "task.h"
 
-#include "nn.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#define NN_PROTO_REQREP 3
-
-#define NN_REQ (NN_PROTO_REQREP * 16 + 0)
-#define NN_REP (NN_PROTO_REQREP * 16 + 1)
-
-#define NN_REQ_RESEND_IVL 1
-
-typedef union nn_req_handle {
-    int i;
-    void *ptr;
-} nn_req_handle;
-
-NN_EXPORT int nn_req_send (int s, nn_req_handle hndl, const void *buf, size_t len, int flags);
-NN_EXPORT int nn_req_recv (int s, nn_req_handle *hndl, void *buf, size_t len, int flags);
-
-#ifdef __cplusplus
+void nn_task_init (struct nn_task *self, uint32_t id, nn_req_handle hndl)
+{
+    self->id = id;
+    self->hndl = hndl;
 }
-#endif
 
-#endif
+void nn_task_term (struct nn_task *self)
+{
+}
 

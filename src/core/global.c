@@ -326,7 +326,6 @@ static void nn_global_init (void)
         strncpy (self.hostname, addr, 63);
         self.hostname[63] = '\0';
     } else {
-        /*  No cross-platform way to find out application binary  */
         rc = gethostname (self.hostname, 63);
         errno_assert (rc == 0);
         self.hostname[63] = '\0';
@@ -435,6 +434,18 @@ int nn_freemsg (void *msg)
 {
     nn_chunk_free (msg);
     return 0;
+}
+
+struct nn_cmsghdr *nn_cmsg_nexthdr_ (const struct nn_msghdr *mhdr,
+    const struct nn_cmsghdr *cmsg)
+{
+    size_t sz;
+
+    sz = sizeof (struct nn_cmsghdr) + cmsg->cmsg_len;
+    if (((char*) cmsg) - ((char*) mhdr->msg_control) + sz >=
+           mhdr->msg_controllen)
+        return NULL;
+    return (struct nn_cmsghdr*) (((char*) cmsg) + sz);
 }
 
 int nn_global_create_socket (int domain, int protocol)

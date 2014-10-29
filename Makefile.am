@@ -54,8 +54,12 @@ NANOMSG_CORE = \
     src/core/sock.h \
     src/core/sock.c \
     src/core/sockbase.c \
-    src/core/device.c \
     src/core/symbol.c
+
+NANOMSG_DEVICES =\
+    src/devices/device.c \
+    src/devices/device.h
+
 
 NANOMSG_AIO = \
     src/aio/ctx.h \
@@ -200,6 +204,8 @@ PROTOCOLS_REQREP = \
     src/protocols/reqrep/req.c \
     src/protocols/reqrep/rep.h \
     src/protocols/reqrep/rep.c \
+    src/protocols/reqrep/task.h \
+    src/protocols/reqrep/task.c \
     src/protocols/reqrep/xrep.h \
     src/protocols/reqrep/xrep.c \
     src/protocols/reqrep/xreq.h \
@@ -297,7 +303,8 @@ libnanomsg_la_SOURCES = \
     $(NANOMSG_AIO) \
     $(NANOMSG_UTILS) \
     $(NANOMSG_PROTOCOLS) \
-    $(NANOMSG_TRANSPORTS)
+    $(NANOMSG_TRANSPORTS) \
+    $(NANOMSG_DEVICES)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libnanomsg.pc
@@ -430,6 +437,7 @@ TRANSPORT_TESTS = \
     tests/inproc_shutdown \
     tests/ipc \
     tests/ipc_shutdown \
+    tests/ipc_stress \
     tests/tcp \
     tests/tcp_shutdown
 
@@ -483,13 +491,14 @@ nanocat_SOURCES = \
 
 if NANOCAT
 bin_PROGRAMS += nanocat
-endif NANOCAT
+endif #NANOCAT
 
 ################################################################################
 #  RFCs                                                                        #
 ################################################################################
 
 EXTRA_DIST += \
+    ./rfc/sp-protocol-ids-01.txt \
     ./rfc/sp-tcp-mapping-01.txt \
     ./rfc/sp-udp-mapping-01.txt \
     ./rfc/sp-tls-mapping-01.txt \
@@ -535,8 +544,25 @@ install-exec-hook:
           $(LN_S) -f nanocat nn_bus$(EXEEXT) && \
           $(LN_S) -f nanocat nn_pair$(EXEEXT)
 
-endif SYMLINKS
-endif NANOCAT
+uninstall-hook:
+	cd $(DESTDIR)$(bindir) && \
+          rm -f nn_push$(EXEEXT) ; \
+          rm -f nn_pull$(EXEEXT) ; \
+          rm -f nn_pub$(EXEEXT) ; \
+          rm -f nn_sub$(EXEEXT) ; \
+          rm -f nn_req$(EXEEXT) ; \
+          rm -f nn_rep$(EXEEXT) ; \
+          rm -f nn_surveyor$(EXEEXT) ; \
+          rm -f nn_respondent$(EXEEXT) ; \
+          rm -f nn_bus$(EXEEXT) ; \
+          rm -f nn_pair$(EXEEXT)
+	cd $(DESTDIR)$(libdir) && \
+          rm -f libnanomsg.*
+	cd $(DESTDIR)$(includedir) && \
+          rm -rf nanomsg
+
+endif #SYMLINKS
+endif #NANOCAT
 
 
 EXTRA_DIST += \
@@ -547,6 +573,10 @@ EXTRA_DIST += \
 
 diagrams:
 	-mkdir -p doc/diagrams
-	./doc/diag.py $(DEFS) $(CPPFLAGS) \
+	$(abs_srcdir)/doc/diag.py $(DEFS) $(CPPFLAGS) \
 		$(shell clang -E - -v < /dev/null 2>&1 | \
 			sed -n '/#include </{:x;n;/^End/q;s/^ */-I/;p;bx}')
+
+clean-local:
+	-rm -f test.ipc test-shutdown.ipc test-separation.ipc
+

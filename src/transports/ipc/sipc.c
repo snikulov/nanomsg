@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 Martin Sustrik  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -138,14 +138,14 @@ static int nn_sipc_send (struct nn_pipebase *self, struct nn_msg *msg)
 
     /*  Serialise the message header. */
     sipc->outhdr [0] = NN_SIPC_MSG_NORMAL;
-    nn_putll (sipc->outhdr + 1, nn_chunkref_size (&sipc->outmsg.hdr) +
+    nn_putll (sipc->outhdr + 1, nn_chunkref_size (&sipc->outmsg.sphdr) +
         nn_chunkref_size (&sipc->outmsg.body));
 
     /*  Start async sending. */
     iov [0].iov_base = sipc->outhdr;
     iov [0].iov_len = sizeof (sipc->outhdr);
-    iov [1].iov_base = nn_chunkref_data (&sipc->outmsg.hdr);
-    iov [1].iov_len = nn_chunkref_size (&sipc->outmsg.hdr);
+    iov [1].iov_base = nn_chunkref_data (&sipc->outmsg.sphdr);
+    iov [1].iov_len = nn_chunkref_size (&sipc->outmsg.sphdr);
     iov [2].iov_base = nn_chunkref_data (&sipc->outmsg.body);
     iov [2].iov_len = nn_chunkref_size (&sipc->outmsg.body);
     nn_usock_send (sipc->usock, iov, 3);
@@ -170,7 +170,7 @@ static int nn_sipc_recv (struct nn_pipebase *self, struct nn_msg *msg)
 
     /*  Start receiving new message. */
     sipc->instate = NN_SIPC_INSTATE_HDR;
-    nn_usock_recv (sipc->usock, sipc->inhdr, sizeof (sipc->inhdr));
+    nn_usock_recv (sipc->usock, sipc->inhdr, sizeof (sipc->inhdr), NULL);
 
     return 0;
 }
@@ -289,7 +289,7 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
                  /*  Start receiving a message in asynchronous manner. */
                  sipc->instate = NN_SIPC_INSTATE_HDR;
                  nn_usock_recv (sipc->usock, &sipc->inhdr,
-                     sizeof (sipc->inhdr));
+                     sizeof (sipc->inhdr), NULL);
 
                  /*  Mark the pipe as available for sending. */
                  sipc->outstate = NN_SIPC_OUTSTATE_IDLE;
@@ -345,7 +345,8 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
                     /*  Start receiving the message body. */
                     sipc->instate = NN_SIPC_INSTATE_BODY;
                     nn_usock_recv (sipc->usock,
-                        nn_chunkref_data (&sipc->inmsg.body), (size_t) size);
+                        nn_chunkref_data (&sipc->inmsg.body),
+                        (size_t) size, NULL);
 
                     return;
 

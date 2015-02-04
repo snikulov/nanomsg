@@ -34,12 +34,14 @@ nninclude_HEADERS = \
     src/inproc.h \
     src/ipc.h \
     src/tcp.h \
+    src/ws.h \
     src/pair.h \
     src/pubsub.h \
     src/reqrep.h \
     src/pipeline.h \
     src/survey.h \
-    src/bus.h
+    src/bus.h \
+    src/tcpmux.h
 
 lib_LTLIBRARIES = libnanomsg.la
 
@@ -58,8 +60,8 @@ NANOMSG_CORE = \
 
 NANOMSG_DEVICES =\
     src/devices/device.c \
-    src/devices/device.h
-
+    src/devices/device.h \
+    src/devices/tcpmuxd.c
 
 NANOMSG_AIO = \
     src/aio/ctx.h \
@@ -228,11 +230,7 @@ NANOMSG_PROTOCOLS = \
     $(PROTOCOLS_PUBSUB) \
     $(PROTOCOLS_REQREP) \
     $(PROTOCOLS_SURVEY) \
-    $(PROTOCOLS_UTILS) \
-    $(PROTOCOLS_INPROC) \
-    $(PROTOCOLS_IPC) \
-    $(PROTOCOLS_TCP)
-
+    $(PROTOCOLS_UTILS)
 
 TRANSPORTS_UTILS = \
     src/transports/utils/backoff.h \
@@ -250,7 +248,9 @@ TRANSPORTS_UTILS = \
     src/transports/utils/port.h \
     src/transports/utils/port.c \
     src/transports/utils/streamhdr.h \
-    src/transports/utils/streamhdr.c
+    src/transports/utils/streamhdr.c \
+    src/transports/utils/base64.h \
+    src/transports/utils/base64.c
 
 TRANSPORTS_INPROC = \
     src/transports/inproc/binproc.h \
@@ -290,11 +290,41 @@ TRANSPORTS_TCP = \
     src/transports/tcp/tcp.h \
     src/transports/tcp/tcp.c
 
+TRANSPORTS_WS = \
+    src/transports/ws/aws.h \
+    src/transports/ws/aws.c \
+    src/transports/ws/bws.h \
+    src/transports/ws/bws.c \
+    src/transports/ws/cws.h \
+    src/transports/ws/cws.c \
+    src/transports/ws/sws.h \
+    src/transports/ws/sws.c \
+    src/transports/ws/ws.h \
+    src/transports/ws/ws.c \
+    src/transports/ws/ws_handshake.h \
+    src/transports/ws/ws_handshake.c \
+    src/transports/ws/sha1.h \
+    src/transports/ws/sha1.c
+
+TRANSPORTS_TCPMUX = \
+    src/transports/tcpmux/atcpmux.h \
+    src/transports/tcpmux/atcpmux.c \
+    src/transports/tcpmux/btcpmux.h \
+    src/transports/tcpmux/btcpmux.c \
+    src/transports/tcpmux/ctcpmux.h \
+    src/transports/tcpmux/ctcpmux.c \
+    src/transports/tcpmux/stcpmux.h \
+    src/transports/tcpmux/stcpmux.c \
+    src/transports/tcpmux/tcpmux.h \
+    src/transports/tcpmux/tcpmux.c
+
 NANOMSG_TRANSPORTS = \
     $(TRANSPORTS_UTILS) \
     $(TRANSPORTS_INPROC) \
     $(TRANSPORTS_IPC) \
-    $(TRANSPORTS_TCP)
+    $(TRANSPORTS_TCP) \
+    $(TRANSPORTS_WS) \
+    $(TRANSPORTS_TCPMUX)
 
 libnanomsg_la_SOURCES = \
     src/transport.h \
@@ -329,6 +359,8 @@ MAN7 = \
     doc/nn_inproc.txt \
     doc/nn_ipc.txt \
     doc/nn_tcp.txt \
+    doc/nn_tcpmux.txt \
+    doc/nn_ws.txt \
     doc/nn_env.txt
 
 MAN3 = \
@@ -356,7 +388,8 @@ MAN3 = \
     doc/nn_poll.txt
 
 MAN1 = \
-    doc/nanocat.txt
+    doc/nanocat.txt \
+    doc/tcpmuxd.txt
 
 if DOC
 
@@ -401,7 +434,7 @@ dist_man7_MANS = $(MAN7:%.txt=%.7)
 
 #  Cause HTML docs to be generated.
 
-doc_DATA = $(MAN1:%.txt=%.1.html) $(MAN3:%.txt=%.3.html) $(MAN7:%.txt=%.7.html)
+html_DATA = $(MAN1:%.txt=%.1.html) $(MAN3:%.txt=%.3.html) $(MAN7:%.txt=%.7.html)
 
 #  Extra files to be cleaned.
 
@@ -439,7 +472,9 @@ TRANSPORT_TESTS = \
     tests/ipc_shutdown \
     tests/ipc_stress \
     tests/tcp \
-    tests/tcp_shutdown
+    tests/tcp_shutdown \
+    tests/ws \
+    tests/tcpmux
 
 PROTOCOL_TESTS = \
     tests/pair \
@@ -466,7 +501,8 @@ FEATURE_TESTS = \
     tests/symbol \
     tests/separation \
     tests/zerocopy \
-    tests/shutdown
+    tests/shutdown \
+    tests/cmsg
 
 EXTRA_DIST += tests/testutil.h
 
@@ -492,6 +528,13 @@ nanocat_SOURCES = \
 if NANOCAT
 bin_PROGRAMS += nanocat
 endif #NANOCAT
+
+tcpmuxd_SOURCES = \
+	tools/tcpmuxd.c
+
+if TCPMUXD
+bin_PROGRAMS += tcpmuxd
+endif #TCPMUXD
 
 ################################################################################
 #  RFCs                                                                        #
@@ -578,5 +621,5 @@ diagrams:
 			sed -n '/#include </{:x;n;/^End/q;s/^ */-I/;p;bx}')
 
 clean-local:
-	-rm -f test.ipc test-shutdown.ipc test-separation.ipc
+	-rm -f test.ipc test-shutdown.ipc test-separation.ipc test-stress.ipc
 

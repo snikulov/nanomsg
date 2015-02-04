@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -29,6 +29,7 @@
 
 #include <stddef.h>
 #include <string.h>
+#include <limits.h>
 
 #define NN_USOCK_STATE_IDLE 1
 #define NN_USOCK_STATE_STARTING 2
@@ -164,6 +165,11 @@ int nn_usock_start (struct nn_usock *self, int domain, int type, int protocol)
     nn_fsm_start (&self->fsm);
 
     return 0;
+}
+
+void nn_usock_start_fd (struct nn_usock *self, int fd)
+{
+    nn_assert (0);
 }
 
 void nn_usock_stop (struct nn_usock *self)
@@ -427,13 +433,17 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
 }
 
-void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
+void nn_usock_recv (struct nn_usock *self, void *buf, size_t len, int *fd)
 {
     int rc;
     BOOL brc;
     WSABUF wbuf;
     DWORD wflags;
     DWORD error;
+
+    /*  Passing file descriptors is not implemented on Windows platform. */
+    if (fd)
+        *fd = -1;
 
     /*  Make sure that the socket is actually alive. */
     nn_assert_state (self, NN_USOCK_STATE_ACTIVE);
@@ -509,7 +519,7 @@ static void nn_usock_create_pipe (struct nn_usock *self, const char *name)
         NULL);
 
     /* TODO: How to properly handle self->p == INVALID_HANDLE_VALUE? */
-    nn_assert (self->p != INVALID_HANDLE_VALUE);
+    win_assert (self->p != INVALID_HANDLE_VALUE);
 
     self->isaccepted = 1;
     nn_usock_create_io_completion (self);
@@ -837,7 +847,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
             case NN_WORKER_OP_ERROR:
                 if (nn_usock_cancel_io (usock) == 0) {
                     nn_fsm_raise(&usock->fsm, &usock->event_error,
-                        NN_USOCK_SHUTDOWN);
+                        NN_USOCK_ERROR);
                     nn_usock_close (usock);
                     usock->state = NN_USOCK_STATE_DONE;
                     return;
@@ -859,7 +869,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
             case NN_WORKER_OP_ERROR:
                 if (nn_usock_cancel_io (usock) == 0) {
                     nn_fsm_raise(&usock->fsm, &usock->event_error,
-                        NN_USOCK_SHUTDOWN);
+                        NN_USOCK_ERROR);
                     nn_usock_close(usock);
                     usock->state = NN_USOCK_STATE_DONE;
                     return;

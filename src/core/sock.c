@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012-2014 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2012-2014 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -825,7 +825,10 @@ static void nn_sock_shutdown (struct nn_fsm *self, int src, int type,
     if (nn_slow (sock->state == NN_SOCK_STATE_STOPPING_EPS)) {
 
         /*  Endpoint is stopped. Now we can safely deallocate it. */
-        nn_assert (src == NN_SOCK_SRC_EP && type == NN_EP_STOPPED);
+        if (!(src == NN_SOCK_SRC_EP && type == NN_EP_STOPPED)) {
+            fprintf (stderr, "src=%d type=%d\n", (int) src, (int) type);
+            nn_assert (src == NN_SOCK_SRC_EP && type == NN_EP_STOPPED);
+        }
         ep = (struct nn_ep*) srcptr;
         nn_list_erase (&sock->sdeps, &ep->item);
         nn_ep_term (ep);

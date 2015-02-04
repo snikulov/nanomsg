@@ -2,6 +2,7 @@ Complete list of copyright holders to nanomsg codebase:
 
 Achille Roussel <ach@fb.com>
 Aleksandar Fabijanic <alex@pocoproject.org>
+Alex Brem <alex@fluktuation.net>
 Andre Jonsson <andre.jonsson@dataductus.se>
 Andrew Starks <andrew.starks@trms.com>
 Aram Santogidis <aram.santogidis@cern.ch>
@@ -27,9 +28,12 @@ Hajime Saito <emijah.s@gmail.com>
 Harlan Lieberman-Berg <H.LiebermanBerg@gmail.com>
 Immanuel Weber <immanuel.weber@fhr.fraunhofer.de>
 Ivan Pechorin <ivan.pechorin@gmail.com>
+Ivo Vachkov <ivachkov@xi-group.com>
+Jack R. Dunaway <jack@wirebirdlabs.com>
 Joshua Foster <jhawk28@gmail.com>
 Julien Ammous <schmurfy@gmail.com>
 Kaspar Schiess <kaspar.schiess@absurd.li>
+Kristian Lein-Mathisen <kristianlein@gmail.com>
 Luca Barbato <luca.barbato@gmail.com>
 Manuel Mendez <mmendez534@gmail.com>
 Mark Ellzey <socket@gmail.com>
@@ -47,13 +51,16 @@ Paul Colomiets <paul@colomiets.name>
 Pavlo Kapyshin <i@93z.org>
 Remy Brunno <remy.bruno@trinnov.com>
 Rob Sciuk <rob@controlq.com>
+Ryan Killea <ryanbaylorkillea@wpi.edu>
 Robert G. Jakabosky <bobby@sharedrealm.com>
 Sergey Avseyev <sergey.avseyev@gmail.com>
 Sergey Kovalevich <inndie@gmail.com>
 Sergei Nikulov <sergey.nikulov@gmail.com>
 Simon Strandgaard <simon@iroots.dk>
 Stan Mihai <stanmihai4@gmail.com>
+Steve Atkins <steve@wordtothewise.com>
 Steve McKay <shubalubdub@gmail.com>
+Stuart Wallace <stuart.wallace@flextrade.com>
 Timothee Besset <ttimo@ttimo.net>
 Tobias Peters <tobias.peters@kreativeffekt.at>
 Victor Guerra <vguerra@gmail.com>

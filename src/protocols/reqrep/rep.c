@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -101,9 +101,9 @@ int nn_rep_send (struct nn_sockbase *self, struct nn_msg *msg)
         return -EFSM;
 
     /*  Move the stored backtrace into the message header. */
-    nn_assert (nn_chunkref_size (&msg->hdr) == 0);
-    nn_chunkref_term (&msg->hdr);
-    nn_chunkref_mv (&msg->hdr, &rep->backtrace);
+    nn_assert (nn_chunkref_size (&msg->sphdr) == 0);
+    nn_chunkref_term (&msg->sphdr);
+    nn_chunkref_mv (&msg->sphdr, &rep->backtrace);
     rep->flags &= ~NN_REP_INPROGRESS;
 
     /*  Send the reply. If it cannot be sent because of pushback,
@@ -134,8 +134,8 @@ int nn_rep_recv (struct nn_sockbase *self, struct nn_msg *msg)
     errnum_assert (rc == 0, -rc);
 
     /*  Store the backtrace. */
-    nn_chunkref_mv (&rep->backtrace, &msg->hdr);
-    nn_chunkref_init (&msg->hdr, 0);
+    nn_chunkref_mv (&rep->backtrace, &msg->sphdr);
+    nn_chunkref_init (&msg->sphdr, 0);
     rep->flags |= NN_REP_INPROGRESS;
 
     return 0;

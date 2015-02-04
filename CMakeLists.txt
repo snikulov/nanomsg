@@ -175,6 +175,20 @@ if (NN_HAVE_GCC_ATOMIC_BUILTINS)
     add_definitions (-DNN_HAVE_GCC_ATOMIC_BUILTINS)
 endif ()
 
+if (NN_HAVE_SOCKETPAIR)
+check_c_source_compiles ("
+#include <sys/socket.h>
+int main()
+{
+    struct msghdr hdr;
+    hdr.msg_control = 0;
+    return 0;
+}
+" NN_HAVE_MSG_CONTROL)
+endif()
+if (NN_HAVE_MSG_CONTROL)
+    add_definitions (-DNN_HAVE_MSG_CONTROL)
+endif()
 #  Decide which features to actually use.
 
 if (NN_HAVE_EPOLL)
